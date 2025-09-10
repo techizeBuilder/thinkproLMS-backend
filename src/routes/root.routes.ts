@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
 import authRouter from "./auth.routes";
 import userRouter from "./user.routes";
-import { completeSetup } from "../controllers";
+import setupRouter from "./setup.routes";
 
 const rootRouter = Router();
 
@@ -11,6 +11,6 @@ rootRouter.get("/", (req: Request, res: Response) => {
 rootRouter.use("/auth", authRouter);
 rootRouter.use("/users", userRouter);
 
-rootRouter.post("/setup/:token", completeSetup);
+rootRouter.use("/setup", setupRouter);
 
 export default rootRouter;
