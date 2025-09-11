@@ -1,12 +1,13 @@
 import express from "express";
 import nodemailer from "nodemailer";
+import { sendSetupEmail } from "../utils/email";
 
 const router = express.Router();
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.SMTP_USER ,
+    user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
 });
@@ -26,7 +27,13 @@ router.post("/send-email", async (req, res) => {
       text,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendSetupEmail({
+      to,
+      name: "Utkarsh",
+      token: "setupToken123",
+    });
+
+    // await transporter.sendMail(mailOptions);
 
     res.json({ success: true, message: "Email sent successfully" });
   } catch (err: any) {
