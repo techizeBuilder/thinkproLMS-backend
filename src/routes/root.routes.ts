@@ -3,6 +3,7 @@ import authRouter from "./auth.routes";
 import userRouter from "./user.routes";
 import setupRouter from "./setup.routes";
 import adminRouter from "./admin.routes";
+import testRouter from "./test.routes";
 
 const rootRouter = Router();
 
@@ -13,5 +14,6 @@ rootRouter.use("/auth", authRouter);
 rootRouter.use("/users", userRouter);
 rootRouter.use("/setup", setupRouter);
 rootRouter.use("/admins", adminRouter);
+rootRouter.use("/test", testRouter);
 
 export default rootRouter;
