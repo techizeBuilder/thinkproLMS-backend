@@ -11,14 +11,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: [
         ROLES.SuperAdmin,
-        ROLES.Admin,
-        ROLES.Mentor,
         ROLES.LeadMentor,
+        ROLES.SchoolAdmin,
+        ROLES.Mentor,
         ROLES.Student,
       ],
-      default: "student",
+      default: ROLES.Student,
     },
     isVerified: { type: Boolean, default: false },
+    isSystemAdmin: { type: Boolean, default: false }, // true only for the original system superadmin
 
     setupToken: { type: String, default: null }, // token used for account setup (email link)
   },

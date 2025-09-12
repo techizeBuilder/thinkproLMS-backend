@@ -1,8 +1,8 @@
 export const ROLES = {
   SuperAdmin: "superadmin",
-  Admin: "admin",
-  Mentor: "mentor",
   LeadMentor: "leadmentor",
+  SchoolAdmin: "schooladmin",
+  Mentor: "mentor",
   Student: "student",
 } as const;
 

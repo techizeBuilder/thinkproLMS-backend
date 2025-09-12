@@ -7,7 +7,7 @@ import { sendSetupEmail } from "../utils/email";
 
 export const getAllAdmins = async (req: Request, res: Response) => {
   try {
-    const admins = await User.find({ role: ROLES.Admin })
+    const admins = await User.find({ role: ROLES.SuperAdmin })
       .select("-password -setupToken")
       .sort({ createdAt: -1 });
 
@@ -33,7 +33,7 @@ export const createAdmin = async (req: Request, res: Response) => {
     }
 
     // check if admin already exists
-    const existingAdmin = await User.findOne({ email, role: ROLES.Admin });
+    const existingAdmin = await User.findOne({ email, role: ROLES.SuperAdmin });
     if (existingAdmin) {
       return res
         .status(409)
@@ -45,7 +45,7 @@ export const createAdmin = async (req: Request, res: Response) => {
     const newAdmin = new User({
       email,
       name,
-      role: ROLES.Admin,
+      role: ROLES.SuperAdmin,
       isVerified: false,
       password: null,
       setupToken,

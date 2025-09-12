@@ -37,6 +37,7 @@ const run = async () => {
       password: hashed,
       role: ROLES.SuperAdmin,
       isVerified: true,
+      isSystemAdmin: true, // Mark as system admin - cannot be deleted
     });
 
     console.log("✅ SuperAdmin created:", superadmin.email);
