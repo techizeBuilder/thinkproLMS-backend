@@ -7,6 +7,8 @@ import superadminRouter from "./superadmin.routes";
 import schoolRouter from "./school.routes";
 import schoolAdminRouter from "./schoolAdmin.routes";
 import leadMentorRouter from "./leadMentor.routes";
+import mentorRouter from "./mentor.routes";
+import studentRouter from "./student.routes";
 
 const rootRouter = Router();
 
@@ -28,6 +30,10 @@ rootRouter.use("/superadmins", superadminRouter);
 rootRouter.use("/schools", schoolRouter);
 rootRouter.use("/school-admins", schoolAdminRouter);
 rootRouter.use("/lead-mentors", leadMentorRouter);
+
+// User management by Lead Mentors
+rootRouter.use("/mentors", mentorRouter);
+rootRouter.use("/students", studentRouter);
 
 // Test
 rootRouter.use("/test", testRouter);

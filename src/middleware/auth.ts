@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, } from "express";
 import { verifyToken } from "../utils/jwt";
 
 export interface AuthRequest extends Request {
   user?: any;
+  file?: any;
 }
 
 export const authMiddleware = (
