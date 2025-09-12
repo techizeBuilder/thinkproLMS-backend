@@ -22,10 +22,12 @@ export async function sendSetupEmail({
   to,
   name,
   token,
+  role = "Administrator",
 }: {
   to: string;
   name: string;
   token: string;
+  role?: string;
 }) {
   const link = `${process.env.APP_BASE_URL}/setup/${token}`;
   const html = `
@@ -58,11 +60,11 @@ export async function sendSetupEmail({
     <body>
       <div class="container">
         <div class="header">
-          <h2 style="margin: 0; color: #0066ff;">LMS Admin Invitation</h2>
+          <h2 style="margin: 0; color: #0066ff;">LMS ${role} Invitation</h2>
         </div>
         <div class="content">
           <p>Hi <strong>${name}</strong>,</p>
-          <p>You have been invited to join the Learning Management System as an Administrator. We're excited to have you on board!</p>
+          <p>You have been invited to join the Learning Management System as a ${role}. We're excited to have you on board!</p>
           <p>To get started, please set up your password and activate your account by clicking the button below:</p>
           <a href="${link}" style="color: #ffffff; text-decoration: none;">
             <div class="button">Set Up Account</div>
@@ -82,7 +84,7 @@ export async function sendSetupEmail({
   await transporter.sendMail({
     from: process.env.FROM_EMAIL,
     to,
-    subject: "LMS — Admin Invitation",
+    subject: `LMS — ${role} Invitation`,
     html,
   });
 }
