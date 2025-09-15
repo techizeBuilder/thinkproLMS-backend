@@ -1,4 +1,7 @@
 import { Request, Response } from "express";
+import { writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { v4 as uuidv4 } from "uuid";
 import School from "../models/School";
 
 // Get all schools
@@ -59,6 +62,12 @@ export const createSchool = async (req: Request, res: Response) => {
       state,
       city,
       branchName,
+      contractStartDate,
+      contractEndDate,
+      projectStartDate,
+      projectEndDate,
+      schoolHeads,
+      serviceDetails,
     } = req.body;
 
     // Validate required fields
@@ -83,6 +92,49 @@ export const createSchool = async (req: Request, res: Response) => {
       });
     }
 
+    // Handle contract document upload
+    let contractDocumentPath = null;
+    if (req.file) {
+      try {
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = join(process.cwd(), 'uploads', 'contracts');
+        mkdirSync(uploadsDir, { recursive: true });
+
+        // Generate unique filename
+        const fileExtension = req.file.originalname.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExtension}`;
+        const filePath = join(uploadsDir, fileName);
+
+        // Write file to disk
+        writeFileSync(filePath, req.file.buffer);
+        contractDocumentPath = `/uploads/contracts/${fileName}`;
+      } catch (fileError) {
+        console.error("Error saving contract document:", fileError);
+        return res.status(500).json({
+          success: false,
+          message: "Error saving contract document",
+        });
+      }
+    }
+
+    // Parse JSON fields if they are strings
+    let parsedSchoolHeads = [];
+    let parsedServiceDetails = null;
+
+    try {
+      if (schoolHeads) {
+        parsedSchoolHeads = typeof schoolHeads === 'string' ? JSON.parse(schoolHeads) : schoolHeads;
+      }
+      if (serviceDetails) {
+        parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
+      }
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid JSON format for schoolHeads or serviceDetails",
+      });
+    }
+
     const newSchool = new School({
       name,
       address,
@@ -93,6 +145,13 @@ export const createSchool = async (req: Request, res: Response) => {
       state,
       city,
       branchName,
+      contractStartDate: contractStartDate ? new Date(contractStartDate) : null,
+      contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
+      projectStartDate: projectStartDate ? new Date(projectStartDate) : null,
+      projectEndDate: projectEndDate ? new Date(projectEndDate) : null,
+      contractDocument: contractDocumentPath,
+      schoolHeads: parsedSchoolHeads,
+      serviceDetails: parsedServiceDetails,
     });
 
     await newSchool.save();
@@ -115,7 +174,85 @@ export const createSchool = async (req: Request, res: Response) => {
 export const updateSchool = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const {
+      name,
+      address,
+      board,
+      image,
+      logo,
+      affiliatedTo,
+      state,
+      city,
+      branchName,
+      contractStartDate,
+      contractEndDate,
+      projectStartDate,
+      projectEndDate,
+      schoolHeads,
+      serviceDetails,
+    } = req.body;
+
+    // Handle contract document upload
+    let contractDocumentPath = null;
+    if (req.file) {
+      try {
+        // Create uploads directory if it doesn't exist
+        const uploadsDir = join(process.cwd(), 'uploads', 'contracts');
+        mkdirSync(uploadsDir, { recursive: true });
+
+        // Generate unique filename
+        const fileExtension = req.file.originalname.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExtension}`;
+        const filePath = join(uploadsDir, fileName);
+
+        // Write file to disk
+        writeFileSync(filePath, req.file.buffer);
+        contractDocumentPath = `/uploads/contracts/${fileName}`;
+      } catch (fileError) {
+        console.error("Error saving contract document:", fileError);
+        return res.status(500).json({
+          success: false,
+          message: "Error saving contract document",
+        });
+      }
+    }
+
+    // Parse JSON fields if they are strings
+    let parsedSchoolHeads = undefined;
+    let parsedServiceDetails = undefined;
+
+    try {
+      if (schoolHeads !== undefined) {
+        parsedSchoolHeads = typeof schoolHeads === 'string' ? JSON.parse(schoolHeads) : schoolHeads;
+      }
+      if (serviceDetails !== undefined) {
+        parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
+      }
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid JSON format for schoolHeads or serviceDetails",
+      });
+    }
+
+    // Build update object
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (address !== undefined) updateData.address = address;
+    if (board !== undefined) updateData.board = board;
+    if (image !== undefined) updateData.image = image;
+    if (logo !== undefined) updateData.logo = logo;
+    if (affiliatedTo !== undefined) updateData.affiliatedTo = affiliatedTo;
+    if (state !== undefined) updateData.state = state;
+    if (city !== undefined) updateData.city = city;
+    if (branchName !== undefined) updateData.branchName = branchName;
+    if (contractStartDate !== undefined) updateData.contractStartDate = contractStartDate ? new Date(contractStartDate) : null;
+    if (contractEndDate !== undefined) updateData.contractEndDate = contractEndDate ? new Date(contractEndDate) : null;
+    if (projectStartDate !== undefined) updateData.projectStartDate = projectStartDate ? new Date(projectStartDate) : null;
+    if (projectEndDate !== undefined) updateData.projectEndDate = projectEndDate ? new Date(projectEndDate) : null;
+    if (contractDocumentPath !== null) updateData.contractDocument = contractDocumentPath;
+    if (parsedSchoolHeads !== undefined) updateData.schoolHeads = parsedSchoolHeads;
+    if (parsedServiceDetails !== undefined) updateData.serviceDetails = parsedServiceDetails;
 
     const school = await School.findByIdAndUpdate(
       id,
