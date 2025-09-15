@@ -9,6 +9,7 @@ import schoolAdminRouter from "./schoolAdmin.routes";
 import leadMentorRouter from "./leadMentor.routes";
 import mentorRouter from "./mentor.routes";
 import studentRouter from "./student.routes";
+import questionBankRouter from "./questionBank.routes";
 
 const rootRouter = Router();
 
@@ -34,6 +35,9 @@ rootRouter.use("/lead-mentors", leadMentorRouter);
 // User management by Lead Mentors
 rootRouter.use("/mentors", mentorRouter);
 rootRouter.use("/students", studentRouter);
+
+// Question Bank
+rootRouter.use("/question-bank", questionBankRouter);
 
 // Test
 rootRouter.use("/test", testRouter);
