@@ -9,6 +9,7 @@ import {
   deleteStudent,
   downloadStudentList,
   getMyProfile,
+  getStudentPassword,
 } from "../controllers/studentController";
 import { authMiddleware } from "../middleware/auth";
 
@@ -38,6 +39,7 @@ router.get("/", getAllStudents);
 router.get("/my-profile", getMyProfile); // Students can access their own profile
 router.get("/download", downloadStudentList);
 router.get("/:id", getStudentById);
+router.get("/:id/password", getStudentPassword); // Get student generated password
 router.post("/", createStudent);
 router.post("/bulk-upload", upload.single("file"), bulkUploadStudents);
 router.put("/:id", updateStudent);

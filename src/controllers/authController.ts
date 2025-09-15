@@ -15,6 +15,12 @@ export const login = async (req: Request, res: Response) => {
   const match = await bcrypt.compare(password, user.password!);
   if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
+  // Auto-verify on first login
+  if (!user.isVerified) {
+    user.isVerified = true;
+    await user.save();
+  }
+
   // Get additional info for Lead Mentors
   let leadMentorId = null;
   if (user.role === ROLES.LeadMentor) {
@@ -24,20 +30,20 @@ export const login = async (req: Request, res: Response) => {
     }
   }
 
-  const token = generateToken({ 
-    id: user._id, 
-    role: user.role, 
-    leadMentorId 
+  const token = generateToken({
+    id: user._id,
+    role: user.role,
+    leadMentorId,
   });
 
   res.json({
     token,
-    user: { 
-      id: user._id, 
-      email: user.email, 
-      role: user.role, 
+    user: {
+      id: user._id,
+      email: user.email,
+      role: user.role,
       name: user.name,
-      leadMentorId 
+      leadMentorId,
     },
   });
 };

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ROLES } from "../constants";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
@@ -25,5 +26,14 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.pre("save", async function (next) {
+  if (this.isNew) {
+    if (this.password) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+  }
+});
 
 export default mongoose.model("User", userSchema);

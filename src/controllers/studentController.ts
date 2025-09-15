@@ -9,31 +9,29 @@ import { ROLES } from "../constants";
 import { sendSetupEmail } from "../utils/email";
 import * as XLSX from "xlsx";
 
-
 // Generate unique student ID
 const generateStudentId = async (schoolId: string): Promise<string> => {
   const school = await School.findById(schoolId);
   const schoolCode = school?.name.substring(0, 3).toUpperCase() || "SCH";
-  
+
   // Find the last student ID for this school
   const lastStudent = await Student.findOne({ school: schoolId })
     .sort({ studentId: -1 })
     .select("studentId");
-  
+
   let nextNumber = 1;
   if (lastStudent && lastStudent.studentId) {
     const lastNumber = parseInt(lastStudent.studentId.split("-")[1] || "0");
     nextNumber = lastNumber + 1;
   }
-  
+
   return `${schoolCode}-${nextNumber.toString().padStart(4, "0")}`;
 };
 
 // Generate unique password for students
-const generateUniquePassword = (studentName: string): string => {
-  const firstName = studentName.split(' ')[0].toLowerCase();
+const generateCommonPassword = (): string => {
   const randomDigits = Math.floor(1000 + Math.random() * 9000); // 4 random digits
-  return `${firstName}${randomDigits}`;
+  return `Welcome${randomDigits}`;
 };
 
 // Get all students - accessible by superadmin, leadmentor, mentor, and schooladmin
@@ -43,7 +41,12 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
     const user = req.user;
 
     // Check if user has permission to access students
-    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor, ROLES.Mentor, ROLES.SchoolAdmin];
+    const allowedRoles = [
+      ROLES.SuperAdmin,
+      ROLES.LeadMentor,
+      ROLES.Mentor,
+      ROLES.SchoolAdmin,
+    ];
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
@@ -53,7 +56,7 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
 
     // Build query filter based on user role
     const filter: any = { isActive: true };
-    
+
     // Role-based filtering
     if (user.role === ROLES.LeadMentor) {
       filter.addedBy = user.leadMentorId;
@@ -96,7 +99,13 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
     const user = req.user;
 
     // Check if user has permission to access students
-    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor, ROLES.Mentor, ROLES.SchoolAdmin, ROLES.Student];
+    const allowedRoles = [
+      ROLES.SuperAdmin,
+      ROLES.LeadMentor,
+      ROLES.Mentor,
+      ROLES.SchoolAdmin,
+      ROLES.Student,
+    ];
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
@@ -106,7 +115,7 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
 
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
-    
+
     // Role-based filtering
     if (user.role === ROLES.Student) {
       // Students can only access their own data
@@ -148,7 +157,8 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
 // Create a single student - only superadmin, leadmentor, and mentor can create
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, schoolId, grade, email, parentEmail, parentPhoneNumber } = req.body;
+    const { name, schoolId, grade, email, parentEmail, parentPhoneNumber } =
+      req.body;
     const user = req.user;
 
     // Check if user has permission to create students
@@ -156,7 +166,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
-        message: "Access denied. Only superadmin, lead mentor, or mentor can create students.",
+        message:
+          "Access denied. Only superadmin, lead mentor, or mentor can create students.",
       });
     }
 
@@ -198,8 +209,12 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
     // Determine if custom credentials or system-generated
     const hasCustomCredentials = !!(email || parentEmail);
-    const studentEmail = email || `${studentId.toLowerCase()}@${school.name.replace(/\s+/g, "").toLowerCase()}.edu`;
-    
+    const studentEmail =
+      email ||
+      `${studentId.toLowerCase()}@${school.name
+        .replace(/\s+/g, "")
+        .toLowerCase()}.edu`;
+
     // Check if email already exists
     const existingUser = await User.findOne({ email: studentEmail });
     if (existingUser) {
@@ -211,8 +226,10 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
     // Create user
     const setupToken = uuidv4();
-    const generatedPassword = hasCustomCredentials ? null : generateUniquePassword(name);
-    
+    const generatedPassword = hasCustomCredentials
+      ? null
+      : generateCommonPassword();
+
     const newUser = new User({
       name,
       email: studentEmail,
@@ -252,7 +269,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: hasCustomCredentials 
+      message: hasCustomCredentials
         ? "Student created successfully and setup email sent"
         : "Student created successfully with generated credentials",
       data: populatedStudent,
@@ -277,7 +294,8 @@ export const bulkUploadStudents = async (req: AuthRequest, res: Response) => {
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
-        message: "Access denied. Only superadmin, lead mentor, or mentor can bulk upload students.",
+        message:
+          "Access denied. Only superadmin, lead mentor, or mentor can bulk upload students.",
       });
     }
 
@@ -341,22 +359,29 @@ export const bulkUploadStudents = async (req: AuthRequest, res: Response) => {
         const studentId = await generateStudentId(schoolId);
 
         // Determine credentials approach
-        const hasCustomCredentials = !generateCredentials && !!(row.email || row.parentEmail);
-        const studentEmail = hasCustomCredentials 
-          ? (row.email || row.parentEmail)
-          : `${studentId.toLowerCase()}@${school.name.replace(/\s+/g, "").toLowerCase()}.edu`;
+        const hasCustomCredentials =
+          !generateCredentials && !!(row.email || row.parentEmail);
+        const studentEmail = hasCustomCredentials
+          ? row.email || row.parentEmail
+          : `${studentId.toLowerCase()}@${school.name
+              .replace(/\s+/g, "")
+              .toLowerCase()}.edu`;
 
         // Check if email already exists
         const existingUser = await User.findOne({ email: studentEmail });
         if (existingUser) {
-          errors.push(`Row ${i + 1}: User with email "${studentEmail}" already exists`);
+          errors.push(
+            `Row ${i + 1}: User with email "${studentEmail}" already exists`
+          );
           continue;
         }
 
         // Create user
         const setupToken = uuidv4();
-        const generatedPassword = hasCustomCredentials ? null : generateUniquePassword(row.name);
-        
+        const generatedPassword = hasCustomCredentials
+          ? null
+          : generateCommonPassword();
+
         const newUser = new User({
           name: row.name,
           email: studentEmail,
@@ -398,7 +423,7 @@ export const bulkUploadStudents = async (req: AuthRequest, res: Response) => {
           hasCustomCredentials,
           generatedPassword: hasCustomCredentials ? null : generatedPassword,
         });
-      } catch (error:any) {
+      } catch (error: any) {
         console.error(`Error processing row ${i + 1}:`, error);
         errors.push(`Row ${i + 1}: ${error.message}`);
       }
@@ -436,13 +461,14 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
-        message: "Access denied. Only superadmin, lead mentor, or mentor can update students.",
+        message:
+          "Access denied. Only superadmin, lead mentor, or mentor can update students.",
       });
     }
 
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
-    
+
     if (user.role === ROLES.LeadMentor) {
       filter.addedBy = user.leadMentorId;
     } else if (user.role === ROLES.Mentor) {
@@ -468,9 +494,12 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     const updateData: any = {};
     if (grade) updateData.grade = grade;
     if (parentEmail !== undefined) updateData.parentEmail = parentEmail;
-    if (parentPhoneNumber !== undefined) updateData.parentPhoneNumber = parentPhoneNumber;
+    if (parentPhoneNumber !== undefined)
+      updateData.parentPhoneNumber = parentPhoneNumber;
 
-    const updatedStudent = await Student.findByIdAndUpdate(id, updateData, { new: true })
+    const updatedStudent = await Student.findByIdAndUpdate(id, updateData, {
+      new: true,
+    })
       .populate("user", "name email isVerified createdAt")
       .populate("school", "name city state board branchName");
 
@@ -499,13 +528,14 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
-        message: "Access denied. Only superadmin, lead mentor, or mentor can delete students.",
+        message:
+          "Access denied. Only superadmin, lead mentor, or mentor can delete students.",
       });
     }
 
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
-    
+
     if (user.role === ROLES.LeadMentor) {
       filter.addedBy = user.leadMentorId;
     } else if (user.role === ROLES.Mentor) {
@@ -546,7 +576,12 @@ export const downloadStudentList = async (req: AuthRequest, res: Response) => {
     const user = req.user;
 
     // Check if user has permission to download student list
-    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor, ROLES.Mentor, ROLES.SchoolAdmin];
+    const allowedRoles = [
+      ROLES.SuperAdmin,
+      ROLES.LeadMentor,
+      ROLES.Mentor,
+      ROLES.SchoolAdmin,
+    ];
     if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
@@ -556,7 +591,7 @@ export const downloadStudentList = async (req: AuthRequest, res: Response) => {
 
     // Build query filter based on user role
     const filter: any = { isActive: true };
-    
+
     if (user.role === ROLES.LeadMentor) {
       filter.addedBy = user.leadMentorId;
     } else if (user.role === ROLES.Mentor) {
@@ -573,12 +608,12 @@ export const downloadStudentList = async (req: AuthRequest, res: Response) => {
       .populate("school", "name city state board branchName")
       .sort({ school: 1, grade: 1, "user.name": 1 });
 
-    const data = students.map(student => ({
+    const data = students.map((student) => ({
       "Student Name": (student.user as any).name,
       "Student ID": student.studentId,
-      "Email": (student.user as any).email,
-      "School": (student.school as any).name,
-      "Grade": student.grade,
+      Email: (student.user as any).email,
+      School: (student.school as any).name,
+      Grade: student.grade,
       "Parent Email": student.parentEmail || "N/A",
       "Parent Phone": student.parentPhoneNumber || "N/A",
       "Generated Password": student.generatedPassword || "N/A",
@@ -589,11 +624,17 @@ export const downloadStudentList = async (req: AuthRequest, res: Response) => {
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-      
+
       const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-      
-      res.setHeader("Content-Disposition", "attachment; filename=students.xlsx");
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=students.xlsx"
+      );
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
       return res.send(buffer);
     } else {
       // Return JSON for PDF generation on frontend
@@ -642,6 +683,73 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching student profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get student generated password - accessible by superadmin, leadmentor, mentor, and schooladmin
+export const getStudentPassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    // Check if user has permission to access student passwords
+    const allowedRoles = [
+      ROLES.SuperAdmin,
+      ROLES.LeadMentor,
+      ROLES.Mentor,
+      ROLES.SchoolAdmin,
+    ];
+    if (!allowedRoles.includes(user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
+    }
+
+    // Find the student
+    const student = await Student.findById(id).populate("user", "name email");
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // Check if user has access to this student's school
+    if (user.role === ROLES.LeadMentor) {
+      const leadMentor = await LeadMentor.findOne({ user: user.id });
+      if (!leadMentor) {
+        return res.status(403).json({
+          success: false,
+          message: "Lead mentor profile not found",
+        });
+      }
+      if (
+        !leadMentor.hasAccessToAllSchools &&
+        !leadMentor.assignedSchools.includes(student.school)
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied. Student not in your schools.",
+        });
+      }
+    }
+
+    // Return the generated password
+    return res.status(200).json({
+      success: true,
+      data: {
+        studentId: student.studentId,
+        generatedPassword: student.generatedPassword,
+        hasCustomCredentials: student.hasCustomCredentials,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching student password:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
