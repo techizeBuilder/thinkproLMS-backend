@@ -139,6 +139,9 @@ export const createQuestion = async (req: AuthRequest, res: Response) => {
 
     const newOrder = lastQuestion ? lastQuestion.order + 1 : 1;
 
+    // Determine approval status based on user role
+    const isAutoApproved = req.user?.role === ROLES.SuperAdmin || req.user?.role === ROLES.LeadMentor;
+    
     const question = new Question({
       questionText,
       grade,
@@ -153,8 +156,8 @@ export const createQuestion = async (req: AuthRequest, res: Response) => {
       difficulty,
       order: newOrder,
       createdBy: req.user?.id,
-      approvedBy: req.user?.role === ROLES.SuperAdmin ? req.user?.id : null,
-      approvedAt: req.user?.role === ROLES.SuperAdmin ? new Date() : null,
+      approvedBy: isAutoApproved ? req.user?.id : null,
+      approvedAt: isAutoApproved ? new Date() : null,
     });
 
     await question.save();

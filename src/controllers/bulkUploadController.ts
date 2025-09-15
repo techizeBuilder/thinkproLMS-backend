@@ -73,8 +73,8 @@ export const parseBulkQuestions = async (req: Request, res: Response) => {
     const headers = jsonData[0] as string[];
     const dataRows = jsonData.slice(1) as any[][];
 
-    // Expected headers
-    const expectedHeaders = [
+    // Required headers (must be present)
+    const requiredHeaders = [
       'Question Text',
       'Grade',
       'Subject',
@@ -82,25 +82,12 @@ export const parseBulkQuestions = async (req: Request, res: Response) => {
       'Answer Type',
       'Answer Choice 1',
       'Answer Choice 2',
-      'Answer Choice 3',
-      'Answer Choice 4',
-      'Answer Choice 5',
-      'Answer Choice 6',
-      'Answer Choice 7',
-      'Answer Choice 8',
-      'Answer Choice 9',
-      'Answer Choice 10',
-      'Answer Choice 11',
-      'Answer Choice 12',
-      'Answer Choice 13',
-      'Answer Choice 14',
-      'Answer Choice 15',
       'Correct Answer(s)',
       'Difficulty'
     ];
 
-    // Validate headers
-    const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
+    // Validate required headers
+    const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
     if (missingHeaders.length > 0) {
       return res.status(400).json({
         success: false,
@@ -156,7 +143,7 @@ export const parseBulkQuestions = async (req: Request, res: Response) => {
         const answerChoices: string[] = [];
         for (let i = 1; i <= 15; i++) {
           const choiceIndex = headers.indexOf(`Answer Choice ${i}`);
-          if (choiceIndex !== -1 && row[choiceIndex]) {
+          if (choiceIndex !== -1 && row[choiceIndex] && row[choiceIndex].toString().trim()) {
             answerChoices.push(row[choiceIndex].toString().trim());
           }
         }
@@ -258,6 +245,9 @@ export const uploadBulkQuestions = async (req: Request, res: Response) => {
 
         const newOrder = lastQuestion ? lastQuestion.order + 1 : 1;
 
+        // Determine approval status based on user role
+        const isAutoApproved = (req as any).user?.role === ROLES.SuperAdmin || (req as any).user?.role === ROLES.LeadMentor;
+        
         const question = new Question({
           questionText: questionData.questionText,
           grade: questionData.grade,
@@ -273,8 +263,8 @@ export const uploadBulkQuestions = async (req: Request, res: Response) => {
           difficulty: questionData.difficulty,
           order: newOrder,
           createdBy: (req as any).user?.id,
-          approvedBy: (req as any).user?.role === ROLES.SuperAdmin ? (req as any).user?.id : null,
-          approvedAt: (req as any).user?.role === ROLES.SuperAdmin ? new Date() : null,
+          approvedBy: isAutoApproved ? (req as any).user?.id : null,
+          approvedAt: isAutoApproved ? new Date() : null,
         });
 
         await question.save();
