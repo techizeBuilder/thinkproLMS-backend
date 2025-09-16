@@ -6,6 +6,7 @@ import {
   createSchool,
   updateSchool,
   deleteSchool,
+  toggleSchoolStatus,
 } from "../controllers/schoolController";
 import { authMiddleware } from "../middleware/auth";
 
@@ -37,6 +38,7 @@ router.get("/", getAllSchools);
 router.get("/:id", getSchoolById);
 router.post("/", upload.single("contractDocument"), createSchool);
 router.put("/:id", upload.single("contractDocument"), updateSchool);
+router.patch("/:id/toggle-status", toggleSchoolStatus);
 router.delete("/:id", deleteSchool);
 
 export default router;

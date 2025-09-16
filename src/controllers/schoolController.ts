@@ -7,7 +7,27 @@ import School from "../models/School";
 // Get all schools
 export const getAllSchools = async (req: Request, res: Response) => {
   try {
-    const schools = await School.find({ isActive: true })
+    const { state, city, includeInactive } = req.query;
+    
+    // Build filter object
+    const filter: any = {};
+    
+    // If includeInactive is not true, only show active schools
+    if (includeInactive !== 'true') {
+      filter.isActive = true;
+    }
+    
+    // Add state filter if provided
+    if (state && state !== 'all') {
+      filter.state = { $regex: new RegExp(`^${state}$`, 'i') };
+    }
+    
+    // Add city filter if provided
+    if (city && city !== 'all') {
+      filter.city = { $regex: new RegExp(`^${city}$`, 'i') };
+    }
+
+    const schools = await School.find(filter)
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -305,6 +325,46 @@ export const deleteSchool = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Error deleting school:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Toggle school activation status
+export const toggleSchoolStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "isActive must be a boolean value",
+      });
+    }
+
+    const school = await School.findByIdAndUpdate(
+      id,
+      { isActive },
+      { new: true, runValidators: true }
+    );
+
+    if (!school) {
+      return res.status(404).json({
+        success: false,
+        message: "School not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `School ${isActive ? 'activated' : 'deactivated'} successfully`,
+      data: school,
+    });
+  } catch (error) {
+    console.error("Error toggling school status:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

@@ -40,25 +40,21 @@ const serviceDetailsSchema = new mongoose.Schema({
     type: String,
     enum: ["School Mentor", "Thinker Mentor"],
   }],
-  grades: [{
-    type: Number,
-    min: 1,
-    max: 10,
-  }],
   subjects: [{
     type: String,
     trim: true,
   }],
-  sections: [{
+  grades: [{
     grade: {
       type: Number,
       min: 1,
       max: 10,
     },
-    numberOfSections: {
-      type: Number,
-      min: 1,
-    },
+    sections: [{
+      type: String,
+      trim: true,
+      default: "A",
+    }],
   }],
 });
 
