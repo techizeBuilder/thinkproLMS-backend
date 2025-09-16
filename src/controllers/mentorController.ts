@@ -8,21 +8,31 @@ import LeadMentor from "../models/LeadMentor";
 import { ROLES } from "../constants";
 import { sendSetupEmail } from "../utils/email";
 
-// Get all mentors for a lead mentor
+// Get all mentors - accessible by superadmin and lead mentors
 export const getAllMentors = async (req: AuthRequest, res: Response) => {
   try {
     const { schoolId } = req.query;
-    const leadMentorId = req.user?.leadMentorId; // Assuming this is set in auth middleware
+    const user = req.user;
 
-    if (!leadMentorId) {
+    // Check if user has permission to access mentors
+    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor];
+    if (!allowedRoles.includes(user?.role)) {
       return res.status(403).json({
         success: false,
-        message: "Access denied. Lead mentor role required.",
+        message: "Access denied. Insufficient permissions.",
       });
     }
 
-    // Build query filter
-    const filter: any = { isActive: true, addedBy: leadMentorId };
+    // Build query filter based on user role
+    const filter: any = { isActive: true };
+
+    // Role-based filtering
+    if (user.role === ROLES.LeadMentor) {
+      filter.addedBy = user.leadMentorId;
+    }
+    // SuperAdmin can see all mentors (no additional filter)
+
+    // Additional filters
     if (schoolId) {
       filter.assignedSchools = schoolId;
     }
