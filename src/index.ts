@@ -13,10 +13,19 @@ const PORT = process.env.PORT || 8000;
 app.use(express.json());
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Cors setup for development
-app.use(cors({ origin: "http://localhost:5173", credentials: true })); // Vite default port is 5173
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://thinkprolms-frontend.onrender.com",
+      "https://lmx.shrawantravels.com",
+    ],
+    credentials: true,
+  })
+); // Vite default port is 5173
 
 // Routes
 app.get("/", (req: Request, res: Response) => {
