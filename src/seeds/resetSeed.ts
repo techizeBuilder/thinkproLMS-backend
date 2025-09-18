@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import User from "./models/User";
-import School from "./models/School";
-import Student from "./models/Student";
-import Mentor from "./models/Mentor";
-import LeadMentor from "./models/LeadMentor";
-import SchoolAdmin from "./models/SchoolAdmin";
-import { Question, QuestionRecommendation } from "./models/QuestionBank";
-import { dbName, ROLES, PERMISSIONS } from "./constants";
+import User from "../models/User";
+import School from "../models/School";
+import Student from "../models/Student";
+import Mentor from "../models/Mentor";
+import LeadMentor from "../models/LeadMentor";
+import SchoolAdmin from "../models/SchoolAdmin";
+import { Question, QuestionRecommendation } from "../models/QuestionBank";
+import { dbName, ROLES, PERMISSIONS } from "../constants";
 
 dotenv.config();
 

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import User from "./models/User";
-import { dbName, ROLES } from "./constants";
+import User from "../models/User";
+import { dbName, ROLES } from "../constants";
 
 dotenv.config();
 

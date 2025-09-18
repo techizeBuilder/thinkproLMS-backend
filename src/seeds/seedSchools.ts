@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import School from "./models/School";
-import { dbName } from "./constants";
+import School from "../models/School";
+import { dbName } from "../constants";
 
 dotenv.config();
 
@@ -48,7 +48,7 @@ const run = async () => {
     console.log(`✅ Created ${createdSchools.length} sample schools`);
 
     console.log("Schools created:");
-    createdSchools.forEach((school) => {
+    createdSchools.forEach((school: any) => {
       console.log(`- ${school.name} (${school.city}, ${school.state})`);
     });
 
