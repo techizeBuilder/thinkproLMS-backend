@@ -756,3 +756,156 @@ export const getStudentPassword = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// Get students for grade promotion - accessible by leadmentor only
+export const getStudentsForPromotion = async (req: AuthRequest, res: Response) => {
+  try {
+    const { schoolId, grade } = req.query;
+    const user = req.user;
+
+    // Check if user has permission to promote students
+    if (user?.role !== ROLES.LeadMentor) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Only lead mentors can promote students.",
+      });
+    }
+
+    // Validate required parameters
+    if (!schoolId || !grade) {
+      return res.status(400).json({
+        success: false,
+        message: "School ID and grade are required",
+      });
+    }
+
+    // Build query filter
+    const filter: any = { 
+      isActive: true,
+      school: schoolId,
+      grade: grade,
+      addedBy: user.leadMentorId
+    };
+
+    const students = await Student.find(filter)
+      .populate("user", "name email isVerified createdAt")
+      .populate("school", "name city state board branchName")
+      .sort({ "user.name": 1 });
+
+    return res.status(200).json({
+      success: true,
+      data: students,
+    });
+  } catch (error) {
+    console.error("Error fetching students for promotion:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Promote students to next grade - accessible by leadmentor only
+export const promoteStudents = async (req: AuthRequest, res: Response) => {
+  try {
+    const { studentIds, schoolId, currentGrade } = req.body;
+    const user = req.user;
+
+    // Check if user has permission to promote students
+    if (user?.role !== ROLES.LeadMentor) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Only lead mentors can promote students.",
+      });
+    }
+
+    // Validate required fields
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Student IDs are required",
+      });
+    }
+
+    if (!schoolId || !currentGrade) {
+      return res.status(400).json({
+        success: false,
+        message: "School ID and current grade are required",
+      });
+    }
+
+    // Calculate next grade
+    const gradeMap: { [key: string]: string } = {
+      "Grade 1": "Grade 2",
+      "Grade 2": "Grade 3",
+      "Grade 3": "Grade 4",
+      "Grade 4": "Grade 5",
+      "Grade 5": "Grade 6",
+      "Grade 6": "Grade 7",
+      "Grade 7": "Grade 8",
+      "Grade 8": "Grade 9",
+      "Grade 9": "Grade 10",
+      "Grade 10": "Grade 10", // Stay in Grade 10 if already at max
+    };
+
+    const nextGrade = gradeMap[currentGrade];
+    if (!nextGrade) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid current grade",
+      });
+    }
+
+    // Check if students are already at the highest grade
+    if (currentGrade === "Grade 10") {
+      return res.status(400).json({
+        success: false,
+        message: "Students are already at the highest grade (Grade 10)",
+      });
+    }
+
+    // Verify all students belong to the lead mentor and are in the specified school and grade
+    const students = await Student.find({
+      _id: { $in: studentIds },
+      school: schoolId,
+      grade: currentGrade,
+      addedBy: user.leadMentorId,
+      isActive: true
+    });
+
+    if (students.length !== studentIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Some students not found or access denied",
+      });
+    }
+
+    // Update students to next grade
+    const updateResult = await Student.updateMany(
+      { _id: { $in: studentIds } },
+      { $set: { grade: nextGrade } }
+    );
+
+    // Fetch updated students for response
+    const updatedStudents = await Student.find({ _id: { $in: studentIds } })
+      .populate("user", "name email")
+      .populate("school", "name");
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully promoted ${updateResult.modifiedCount} students from ${currentGrade} to ${nextGrade}`,
+      data: {
+        promotedCount: updateResult.modifiedCount,
+        students: updatedStudents,
+        fromGrade: currentGrade,
+        toGrade: nextGrade
+      },
+    });
+  } catch (error) {
+    console.error("Error promoting students:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

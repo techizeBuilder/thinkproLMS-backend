@@ -10,6 +10,8 @@ import {
   downloadStudentList,
   getMyProfile,
   getStudentPassword,
+  getStudentsForPromotion,
+  promoteStudents,
 } from "../controllers/studentController";
 import { authMiddleware } from "../middleware/auth";
 import { requirePermission, PERMISSIONS } from "../middleware/permissions";
@@ -39,11 +41,13 @@ router.use(authMiddleware);
 router.get("/", getAllStudents);
 router.get("/my-profile", getMyProfile); // Students can access their own profile
 router.get("/download", downloadStudentList);
+router.get("/promotion", getStudentsForPromotion); // Get students for grade promotion
 router.get("/:id", getStudentById);
 router.get("/:id/password", getStudentPassword); // Get student generated password
 // Only lead mentors with ADD_STUDENTS permission can create/update/delete students
 router.post("/", requirePermission("ADD_STUDENTS"), createStudent);
 router.post("/bulk-upload", requirePermission("ADD_STUDENTS"), upload.single("file"), bulkUploadStudents);
+router.post("/promote", requirePermission("ADD_STUDENTS"), promoteStudents); // Promote students to next grade
 router.put("/:id", requirePermission("ADD_STUDENTS"), updateStudent);
 router.delete("/:id", requirePermission("ADD_STUDENTS"), deleteStudent);
 
