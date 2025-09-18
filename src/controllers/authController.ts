@@ -23,10 +23,12 @@ export const login = async (req: Request, res: Response) => {
 
   // Get additional info for Lead Mentors
   let leadMentorId = null;
+  let permissions: string[] = [];
   if (user.role === ROLES.LeadMentor) {
     const leadMentor = await LeadMentor.findOne({ user: user._id });
     if (leadMentor) {
       leadMentorId = leadMentor._id;
+      permissions = leadMentor.permissions;
     }
   }
 
@@ -44,6 +46,7 @@ export const login = async (req: Request, res: Response) => {
       role: user.role,
       name: user.name,
       leadMentorId,
+      permissions,
     },
   });
 };

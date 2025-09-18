@@ -10,6 +10,8 @@ import leadMentorRouter from "./leadMentor.routes";
 import mentorRouter from "./mentor.routes";
 import studentRouter from "./student.routes";
 import questionBankRouter from "./questionBank.routes";
+import subjectRouter from "./subject.routes";
+import moduleRouter from "./module.routes";
 
 const rootRouter = Router();
 
@@ -38,6 +40,10 @@ rootRouter.use("/students", studentRouter);
 
 // Question Bank
 rootRouter.use("/question-bank", questionBankRouter);
+
+// Resource & Modules Management
+rootRouter.use("/subjects", subjectRouter);
+rootRouter.use("/modules", moduleRouter);
 
 // Test
 rootRouter.use("/test", testRouter);

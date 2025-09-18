@@ -17,7 +17,7 @@ export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
     try {
       // Get user from auth middleware (assuming it's already set)
       const user = (req as any).user;
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -39,11 +39,10 @@ export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
       }
 
       // Find lead mentor record
-      const leadMentor = await LeadMentor.findOne({ 
-        user: user._id, 
-        isActive: true 
+      const leadMentor = await LeadMentor.findOne({
+        user: user.id,
+        isActive: true,
       }).populate("user", "name email role");
-
       if (!leadMentor) {
         return res.status(403).json({
           success: false,
@@ -73,11 +72,13 @@ export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
 };
 
 // Helper function to check multiple permissions
-export const requireAnyPermission = (permissions: (keyof typeof PERMISSIONS)[]) => {
+export const requireAnyPermission = (
+  permissions: (keyof typeof PERMISSIONS)[]
+) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user;
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -99,9 +100,9 @@ export const requireAnyPermission = (permissions: (keyof typeof PERMISSIONS)[]) 
       }
 
       // Find lead mentor record
-      const leadMentor = await LeadMentor.findOne({ 
-        user: user._id, 
-        isActive: true 
+      const leadMentor = await LeadMentor.findOne({
+        user: user._id,
+        isActive: true,
       }).populate("user", "name email role");
 
       if (!leadMentor) {
@@ -112,7 +113,7 @@ export const requireAnyPermission = (permissions: (keyof typeof PERMISSIONS)[]) 
       }
 
       // Check if lead mentor has any of the required permissions
-      const hasPermission = permissions.some(permission => 
+      const hasPermission = permissions.some((permission) =>
         leadMentor.permissions.includes(PERMISSIONS[permission])
       );
 
