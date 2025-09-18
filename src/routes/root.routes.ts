@@ -12,6 +12,7 @@ import studentRouter from "./student.routes";
 import questionBankRouter from "./questionBank.routes";
 import subjectRouter from "./subject.routes";
 import moduleRouter from "./module.routes";
+import fileUploadRouter from "./fileUpload.routes";
 
 const rootRouter = Router();
 
@@ -44,6 +45,9 @@ rootRouter.use("/question-bank", questionBankRouter);
 // Resource & Modules Management
 rootRouter.use("/subjects", subjectRouter);
 rootRouter.use("/modules", moduleRouter);
+
+// File Upload
+rootRouter.use("/files", fileUploadRouter);
 
 // Test
 rootRouter.use("/test", testRouter);

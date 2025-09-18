@@ -5,6 +5,19 @@ import School from "../models/School";
 import User from "../models/User";
 import SchoolAdmin from "../models/SchoolAdmin";
 import LeadMentor from "../models/LeadMentor";
+import { 
+  uploadVideo, 
+  uploadImage, 
+  uploadDocument, 
+  directUpload,
+  uploadMultiple
+} from '../controllers/fileUploadController';
+import { 
+  videoUpload, 
+  imageUpload, 
+  documentUpload,
+  generalUpload
+} from '../config/s3Storage';
 
 const router = express.Router();
 
@@ -96,5 +109,12 @@ router.get("/test-multiple-admins", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// File upload test routes
+router.post("/upload/video", videoUpload.single('video'), uploadVideo);
+router.post("/upload/image", imageUpload.single('image'), uploadImage);
+router.post("/upload/document", documentUpload.single('document'), uploadDocument);
+router.post("/upload/multiple", generalUpload.array('files', 10), uploadMultiple);
+router.post("/upload/direct", directUpload);
 
 export default router;
