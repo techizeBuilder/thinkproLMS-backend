@@ -59,7 +59,7 @@ export const getLeadMentorById = async (req: Request, res: Response) => {
 // Create new lead mentor
 export const createLeadMentor = async (req: Request, res: Response) => {
   try {
-    const { name, email, phoneNumber, assignedSchools, hasAccessToAllSchools } = req.body;
+    const { name, email, phoneNumber, assignedSchools, hasAccessToAllSchools, permissions } = req.body;
 
     // Validate required fields
     if (!name || !email || !phoneNumber) {
@@ -114,6 +114,7 @@ export const createLeadMentor = async (req: Request, res: Response) => {
       phoneNumber,
       assignedSchools: hasAccessToAllSchools ? [] : (assignedSchools || []),
       hasAccessToAllSchools: hasAccessToAllSchools || false,
+      permissions: permissions || [],
     });
 
     await newLeadMentor.save();
@@ -148,7 +149,7 @@ export const createLeadMentor = async (req: Request, res: Response) => {
 export const updateLeadMentor = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { phoneNumber, assignedSchools, hasAccessToAllSchools, isActive } = req.body;
+    const { phoneNumber, assignedSchools, hasAccessToAllSchools, isActive, permissions } = req.body;
 
     // If specific schools are assigned, validate they exist
     if (assignedSchools && assignedSchools.length > 0) {
@@ -172,6 +173,10 @@ export const updateLeadMentor = async (req: Request, res: Response) => {
       updateData.assignedSchools = hasAccessToAllSchools ? [] : (assignedSchools || []);
     } else if (assignedSchools !== undefined) {
       updateData.assignedSchools = assignedSchools;
+    }
+    
+    if (permissions !== undefined) {
+      updateData.permissions = permissions;
     }
 
     const leadMentor = await LeadMentor.findByIdAndUpdate(

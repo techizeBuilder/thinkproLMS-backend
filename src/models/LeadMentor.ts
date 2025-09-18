@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { PERMISSIONS } from "../constants";
 
 const leadMentorSchema = new mongoose.Schema(
   {
@@ -20,6 +21,13 @@ const leadMentorSchema = new mongoose.Schema(
     hasAccessToAllSchools: {
       type: Boolean,
       default: false,
+    },
+    permissions: {
+      type: [{
+        type: String,
+        enum: Object.values(PERMISSIONS),
+      }],
+      default: [],
     },
     isActive: {
       type: Boolean,

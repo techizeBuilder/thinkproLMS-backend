@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seeds/seed.ts",
+    "seed-schools": "ts-node src/seeds/seedSchools.ts",
+    "reset-seed": "ts-node src/seeds/resetSeed.ts",
+    "hard-reset": "ts-node src/seeds/hard-reset.seed.ts"
   },
   "keywords": [],
   "author": "",
