@@ -58,11 +58,9 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
     const filter: any = { isActive: true };
 
     // Role-based filtering
-    if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.Mentor) {
-      // Mentors can see students from schools they're associated with
-      filter.addedBy = user.leadMentorId;
+    if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
+      // Lead mentors and mentors can see students they personally added
+      filter.addedBy = user.id;
     } else if (user.role === ROLES.SchoolAdmin) {
       // School admins can see students from their school only
       filter.school = user.schoolId;
@@ -116,18 +114,7 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
 
-    // Role-based filtering
-    if (user.role === ROLES.Student) {
-      // Students can only access their own data
-      filter.user = user.id;
-    } else if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.Mentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.SchoolAdmin) {
-      filter.school = user.schoolId;
-    }
-    // SuperAdmin can access any student (no additional filter)
+    // Any user can access any student (no additional filter)
 
     const student = await Student.findOne(filter)
       .populate("user", "name email isVerified createdAt")
@@ -171,21 +158,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Determine the addedBy field based on user role
-    let addedBy;
-    if (user.role === ROLES.SuperAdmin) {
-      // For superadmin, we need to get leadMentorId from request or find appropriate lead mentor
-      addedBy = user.leadMentorId || null; // This might need adjustment based on your business logic
-    } else {
-      addedBy = user.leadMentorId;
-    }
-
-    if (!addedBy && user.role !== ROLES.SuperAdmin) {
-      return res.status(400).json({
-        success: false,
-        message: "Lead mentor association required.",
-      });
-    }
+    // Use the current user's ID as addedBy regardless of role
+    const addedBy = user._id || user.id;
 
     // Validate required fields
     if (!name || !schoolId || !grade) {
@@ -299,20 +273,8 @@ export const bulkUploadStudents = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Determine the addedBy field based on user role
-    let addedBy;
-    if (user.role === ROLES.SuperAdmin) {
-      addedBy = user.leadMentorId || null;
-    } else {
-      addedBy = user.leadMentorId;
-    }
-
-    if (!addedBy && user.role !== ROLES.SuperAdmin) {
-      return res.status(400).json({
-        success: false,
-        message: "Lead mentor association required.",
-      });
-    }
+    // Use the current user's ID as addedBy regardless of role
+    const addedBy = user._id;
 
     if (!req.file) {
       return res.status(400).json({
@@ -469,10 +431,8 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
 
-    if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.Mentor) {
-      filter.addedBy = user.leadMentorId;
+    if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
+      filter.addedBy = user.id;
     }
     // SuperAdmin can update any student (no additional filter)
 
@@ -536,10 +496,8 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     // Build query filter based on user role
     let filter: any = { _id: id, isActive: true };
 
-    if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.Mentor) {
-      filter.addedBy = user.leadMentorId;
+    if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
+      filter.addedBy = user.id;
     }
     // SuperAdmin can delete any student (no additional filter)
 
@@ -592,10 +550,8 @@ export const downloadStudentList = async (req: AuthRequest, res: Response) => {
     // Build query filter based on user role
     const filter: any = { isActive: true };
 
-    if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
-    } else if (user.role === ROLES.Mentor) {
-      filter.addedBy = user.leadMentorId;
+    if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
+      filter.addedBy = user.id;
     } else if (user.role === ROLES.SchoolAdmin) {
       filter.school = user.schoolId;
     }
@@ -758,7 +714,10 @@ export const getStudentPassword = async (req: AuthRequest, res: Response) => {
 };
 
 // Get students for grade promotion - accessible by leadmentor only
-export const getStudentsForPromotion = async (req: AuthRequest, res: Response) => {
+export const getStudentsForPromotion = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
     const { schoolId, grade } = req.query;
     const user = req.user;
@@ -780,11 +739,11 @@ export const getStudentsForPromotion = async (req: AuthRequest, res: Response) =
     }
 
     // Build query filter
-    const filter: any = { 
+    const filter: any = {
       isActive: true,
       school: schoolId,
       grade: grade,
-      addedBy: user.leadMentorId
+      addedBy: user.leadMentorId,
     };
 
     const students = await Student.find(filter)
@@ -870,7 +829,7 @@ export const promoteStudents = async (req: AuthRequest, res: Response) => {
       school: schoolId,
       grade: currentGrade,
       addedBy: user.leadMentorId,
-      isActive: true
+      isActive: true,
     });
 
     if (students.length !== studentIds.length) {
@@ -898,7 +857,7 @@ export const promoteStudents = async (req: AuthRequest, res: Response) => {
         promotedCount: updateResult.modifiedCount,
         students: updatedStudents,
         fromGrade: currentGrade,
-        toGrade: nextGrade
+        toGrade: nextGrade,
       },
     });
   } catch (error) {

@@ -49,7 +49,7 @@ const studentSchema = new mongoose.Schema(
     },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "LeadMentor",
+      ref: "User",
       required: true,
     },
   },
