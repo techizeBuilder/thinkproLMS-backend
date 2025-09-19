@@ -33,7 +33,7 @@ const schoolHeadSchema = new mongoose.Schema({
 const serviceDetailsSchema = new mongoose.Schema({
   serviceType: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
   },
   mentors: [{
