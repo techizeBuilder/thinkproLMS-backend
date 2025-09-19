@@ -16,13 +16,25 @@ const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
-    // Allow PDF, DOC, DOCX files for contract documents
-    if (file.mimetype === "application/pdf" ||
-        file.mimetype === "application/msword" ||
-        file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      cb(null, true);
+    // Allow different file types based on field name
+    if (file.fieldname === 'contractDocument') {
+      // Allow PDF, DOC, DOCX files for contract documents
+      if (file.mimetype === "application/pdf" ||
+          file.mimetype === "application/msword" ||
+          file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        cb(null, true);
+      } else {
+        cb(new Error("Only PDF, DOC, and DOCX files are allowed for contract documents"));
+      }
+    } else if (file.fieldname === 'image' || file.fieldname === 'logo' || file.fieldname.startsWith('schoolHeadProfilePic')) {
+      // Allow image files for school image, logo, and school head profile pictures
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only image files are allowed for images and logos"));
+      }
     } else {
-      cb(new Error("Only PDF, DOC, and DOCX files are allowed for contract documents"));
+      cb(new Error("Invalid file field"));
     }
   },
   limits: {
@@ -36,8 +48,26 @@ router.use(authMiddleware);
 // School routes
 router.get("/", getAllSchools);
 router.get("/:id", getSchoolById);
-router.post("/", upload.single("contractDocument"), createSchool);
-router.put("/:id", upload.single("contractDocument"), updateSchool);
+router.post("/", upload.fields([
+  { name: 'contractDocument', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
+  { name: 'logo', maxCount: 1 },
+  { name: 'schoolHeadProfilePic0', maxCount: 1 },
+  { name: 'schoolHeadProfilePic1', maxCount: 1 },
+  { name: 'schoolHeadProfilePic2', maxCount: 1 },
+  { name: 'schoolHeadProfilePic3', maxCount: 1 },
+  { name: 'schoolHeadProfilePic4', maxCount: 1 }
+]), createSchool);
+router.put("/:id", upload.fields([
+  { name: 'contractDocument', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
+  { name: 'logo', maxCount: 1 },
+  { name: 'schoolHeadProfilePic0', maxCount: 1 },
+  { name: 'schoolHeadProfilePic1', maxCount: 1 },
+  { name: 'schoolHeadProfilePic2', maxCount: 1 },
+  { name: 'schoolHeadProfilePic3', maxCount: 1 },
+  { name: 'schoolHeadProfilePic4', maxCount: 1 }
+]), updateSchool);
 router.patch("/:id/toggle-status", toggleSchoolStatus);
 router.delete("/:id", deleteSchool);
 

@@ -112,29 +112,58 @@ export const createSchool = async (req: Request, res: Response) => {
       });
     }
 
-    // Handle contract document upload
+    // Handle file uploads
     let contractDocumentPath = null;
-    if (req.file) {
-      try {
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = join(process.cwd(), 'uploads', 'contracts');
-        mkdirSync(uploadsDir, { recursive: true });
+    let imagePath = null;
+    let logoPath = null;
+    const profilePicPaths: { [key: number]: string } = {};
 
-        // Generate unique filename
-        const fileExtension = req.file.originalname.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExtension}`;
-        const filePath = join(uploadsDir, fileName);
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } || {};
 
-        // Write file to disk
-        writeFileSync(filePath, req.file.buffer);
-        contractDocumentPath = `/uploads/contracts/${fileName}`;
-      } catch (fileError) {
-        console.error("Error saving contract document:", fileError);
-        return res.status(500).json({
-          success: false,
-          message: "Error saving contract document",
-        });
+    // Helper function to save file
+    const saveFile = (file: Express.Multer.File, subDir: string): string => {
+      const uploadsDir = join(process.cwd(), 'uploads', subDir);
+      mkdirSync(uploadsDir, { recursive: true });
+
+      const fileExtension = file.originalname.split('.').pop() || '';
+      const fileName = `${uuidv4()}.${fileExtension}`;
+      const filePath = join(uploadsDir, fileName);
+
+      writeFileSync(filePath, file.buffer);
+      return `/uploads/${subDir}/${fileName}`;
+    };
+
+    try {
+      // Handle contract document
+      if (files.contractDocument && files.contractDocument[0]) {
+        contractDocumentPath = saveFile(files.contractDocument[0], 'contracts');
       }
+
+      // Handle school image
+      if (files.image && files.image[0]) {
+        imagePath = saveFile(files.image[0], 'schools/images');
+      }
+
+      // Handle school logo
+      if (files.logo && files.logo[0]) {
+        logoPath = saveFile(files.logo[0], 'schools/logos');
+      }
+
+      // Handle school head profile pictures
+      Object.keys(files).forEach(fieldName => {
+        if (fieldName.startsWith('schoolHeadProfilePic')) {
+          const index = parseInt(fieldName.replace('schoolHeadProfilePic', ''));
+          if (files[fieldName] && files[fieldName][0]) {
+            profilePicPaths[index] = saveFile(files[fieldName][0], 'schools/profile-pics');
+          }
+        }
+      });
+    } catch (fileError) {
+      console.error("Error saving files:", fileError);
+      return res.status(500).json({
+        success: false,
+        message: "Error saving files",
+      });
     }
 
     // Parse JSON fields if they are strings
@@ -144,6 +173,14 @@ export const createSchool = async (req: Request, res: Response) => {
     try {
       if (schoolHeads) {
         parsedSchoolHeads = typeof schoolHeads === 'string' ? JSON.parse(schoolHeads) : schoolHeads;
+        
+        // Update profile picture paths for school heads
+        parsedSchoolHeads = parsedSchoolHeads.map((head: any, index: number) => {
+          if (profilePicPaths[index]) {
+            return { ...head, profilePic: profilePicPaths[index] };
+          }
+          return head;
+        });
       }
       if (serviceDetails) {
         parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
@@ -159,8 +196,8 @@ export const createSchool = async (req: Request, res: Response) => {
       name,
       address,
       board,
-      image,
-      logo,
+      image: imagePath || image,
+      logo: logoPath || logo,
       affiliatedTo,
       state,
       city,
@@ -212,29 +249,58 @@ export const updateSchool = async (req: Request, res: Response) => {
       serviceDetails,
     } = req.body;
 
-    // Handle contract document upload
+    // Handle file uploads
     let contractDocumentPath = null;
-    if (req.file) {
-      try {
-        // Create uploads directory if it doesn't exist
-        const uploadsDir = join(process.cwd(), 'uploads', 'contracts');
-        mkdirSync(uploadsDir, { recursive: true });
+    let imagePath = null;
+    let logoPath = null;
+    const profilePicPaths: { [key: number]: string } = {};
 
-        // Generate unique filename
-        const fileExtension = req.file.originalname.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExtension}`;
-        const filePath = join(uploadsDir, fileName);
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } || {};
 
-        // Write file to disk
-        writeFileSync(filePath, req.file.buffer);
-        contractDocumentPath = `/uploads/contracts/${fileName}`;
-      } catch (fileError) {
-        console.error("Error saving contract document:", fileError);
-        return res.status(500).json({
-          success: false,
-          message: "Error saving contract document",
-        });
+    // Helper function to save file
+    const saveFile = (file: Express.Multer.File, subDir: string): string => {
+      const uploadsDir = join(process.cwd(), 'uploads', subDir);
+      mkdirSync(uploadsDir, { recursive: true });
+
+      const fileExtension = file.originalname.split('.').pop() || '';
+      const fileName = `${uuidv4()}.${fileExtension}`;
+      const filePath = join(uploadsDir, fileName);
+
+      writeFileSync(filePath, file.buffer);
+      return `/uploads/${subDir}/${fileName}`;
+    };
+
+    try {
+      // Handle contract document
+      if (files.contractDocument && files.contractDocument[0]) {
+        contractDocumentPath = saveFile(files.contractDocument[0], 'contracts');
       }
+
+      // Handle school image
+      if (files.image && files.image[0]) {
+        imagePath = saveFile(files.image[0], 'schools/images');
+      }
+
+      // Handle school logo
+      if (files.logo && files.logo[0]) {
+        logoPath = saveFile(files.logo[0], 'schools/logos');
+      }
+
+      // Handle school head profile pictures
+      Object.keys(files).forEach(fieldName => {
+        if (fieldName.startsWith('schoolHeadProfilePic')) {
+          const index = parseInt(fieldName.replace('schoolHeadProfilePic', ''));
+          if (files[fieldName] && files[fieldName][0]) {
+            profilePicPaths[index] = saveFile(files[fieldName][0], 'schools/profile-pics');
+          }
+        }
+      });
+    } catch (fileError) {
+      console.error("Error saving files:", fileError);
+      return res.status(500).json({
+        success: false,
+        message: "Error saving files",
+      });
     }
 
     // Parse JSON fields if they are strings
@@ -244,6 +310,16 @@ export const updateSchool = async (req: Request, res: Response) => {
     try {
       if (schoolHeads !== undefined) {
         parsedSchoolHeads = typeof schoolHeads === 'string' ? JSON.parse(schoolHeads) : schoolHeads;
+        
+        // Update profile picture paths for school heads
+        if (parsedSchoolHeads && Array.isArray(parsedSchoolHeads)) {
+          parsedSchoolHeads = parsedSchoolHeads.map((head: any, index: number) => {
+            if (profilePicPaths[index]) {
+              return { ...head, profilePic: profilePicPaths[index] };
+            }
+            return head;
+          });
+        }
       }
       if (serviceDetails !== undefined) {
         parsedServiceDetails = typeof serviceDetails === 'string' ? JSON.parse(serviceDetails) : serviceDetails;
@@ -260,8 +336,10 @@ export const updateSchool = async (req: Request, res: Response) => {
     if (name !== undefined) updateData.name = name;
     if (address !== undefined) updateData.address = address;
     if (board !== undefined) updateData.board = board;
-    if (image !== undefined) updateData.image = image;
-    if (logo !== undefined) updateData.logo = logo;
+    if (imagePath !== null) updateData.image = imagePath;
+    else if (image !== undefined) updateData.image = image;
+    if (logoPath !== null) updateData.logo = logoPath;
+    else if (logo !== undefined) updateData.logo = logo;
     if (affiliatedTo !== undefined) updateData.affiliatedTo = affiliatedTo;
     if (state !== undefined) updateData.state = state;
     if (city !== undefined) updateData.city = city;
