@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
         ROLES.SchoolAdmin,
         ROLES.Mentor,
         ROLES.Student,
+        ROLES.Guest,
       ],
       default: ROLES.Student,
     },

@@ -4,6 +4,7 @@ export const ROLES = {
   SchoolAdmin: "schooladmin",
   Mentor: "mentor",
   Student: "student",
+  Guest: "guest",
 } as const;
 
 export const PERMISSIONS = {
