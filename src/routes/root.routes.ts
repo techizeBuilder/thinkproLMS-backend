@@ -12,6 +12,7 @@ import studentRouter from "./student.routes";
 import questionBankRouter from "./questionBank.routes";
 import subjectRouter from "./subject.routes";
 import moduleRouter from "./module.routes";
+import resourceRouter from "./resource.routes";
 
 const rootRouter = Router();
 
@@ -44,6 +45,7 @@ rootRouter.use("/question-bank", questionBankRouter);
 // Resource & Modules Management
 rootRouter.use("/subjects", subjectRouter);
 rootRouter.use("/modules", moduleRouter);
+rootRouter.use("/resources", resourceRouter);
 
 // Test
 rootRouter.use("/test", testRouter);

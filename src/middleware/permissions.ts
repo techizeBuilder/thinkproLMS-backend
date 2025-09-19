@@ -38,6 +38,7 @@ export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
         });
       }
 
+      console.log({ user });
       // Find lead mentor record
       const leadMentor = await LeadMentor.findOne({
         user: user.id,
@@ -101,7 +102,7 @@ export const requireAnyPermission = (
 
       // Find lead mentor record
       const leadMentor = await LeadMentor.findOne({
-        user: user._id,
+        user: user.id,
         isActive: true,
       }).populate("user", "name email role");
 
