@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import LeadMentor from "../models/LeadMentor";
-import { PERMISSIONS } from "../constants";
+import Mentor from "../models/Mentor";
+import { PERMISSIONS, ROLES } from "../constants";
 
 // Extend Request interface to include leadMentor
 declare global {
@@ -11,7 +12,7 @@ declare global {
   }
 }
 
-// Middleware to check if lead mentor has specific permission
+// Middleware to check if user has specific permission
 export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -26,42 +27,49 @@ export const requirePermission = (permission: keyof typeof PERMISSIONS) => {
       }
 
       // If user is super admin, allow all permissions
-      if (user.role === "superadmin") {
+      if (user.role === ROLES.SuperAdmin) {
         return next();
       }
 
-      // If user is not a lead mentor, deny access
-      if (user.role !== "leadmentor") {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied. Lead mentor role required.",
-        });
+      // For mentors, allow assessment permissions
+      if (user.role === ROLES.Mentor) {
+        if (permission === "CREATE_ASSESSMENTS" || permission === "MANAGE_ASSESSMENTS") {
+          return next();
+        }
       }
 
-      console.log({ user });
-      // Find lead mentor record
-      const leadMentor = await LeadMentor.findOne({
-        user: user.id,
-        isActive: true,
-      }).populate("user", "name email role");
-      if (!leadMentor) {
-        return res.status(403).json({
-          success: false,
-          message: "Lead mentor record not found or inactive",
-        });
+      // For lead mentors, check their specific permissions
+      if (user.role === ROLES.LeadMentor) {
+        const leadMentor = await LeadMentor.findOne({
+          user: user.id,
+          isActive: true,
+        }).populate("user", "name email role");
+        
+        if (!leadMentor) {
+          return res.status(403).json({
+            success: false,
+            message: "Lead mentor record not found or inactive",
+          });
+        }
+
+        // Check if lead mentor has the required permission
+        if (!leadMentor.permissions.includes(PERMISSIONS[permission])) {
+          return res.status(403).json({
+            success: false,
+            message: `Access denied. Required permission: ${permission}`,
+          });
+        }
+
+        // Add lead mentor to request for use in controllers
+        req.leadMentor = leadMentor;
+        return next();
       }
 
-      // Check if lead mentor has the required permission
-      if (!leadMentor.permissions.includes(PERMISSIONS[permission])) {
-        return res.status(403).json({
-          success: false,
-          message: `Access denied. Required permission: ${permission}`,
-        });
-      }
-
-      // Add lead mentor to request for use in controllers
-      req.leadMentor = leadMentor;
-      next();
+      // If user doesn't have the required role, deny access
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
     } catch (error) {
       console.error("Permission middleware error:", error);
       return res.status(500).json({
@@ -88,45 +96,55 @@ export const requireAnyPermission = (
       }
 
       // If user is super admin, allow all permissions
-      if (user.role === "superadmin") {
+      if (user.role === ROLES.SuperAdmin) {
         return next();
       }
 
-      // If user is not a lead mentor, deny access
-      if (user.role !== "leadmentor") {
-        return res.status(403).json({
-          success: false,
-          message: "Access denied. Lead mentor role required.",
-        });
+      // For mentors, check if any permission is assessment-related
+      if (user.role === ROLES.Mentor) {
+        const hasAssessmentPermission = permissions.some(permission => 
+          permission === "CREATE_ASSESSMENTS" || permission === "MANAGE_ASSESSMENTS"
+        );
+        if (hasAssessmentPermission) {
+          return next();
+        }
       }
 
-      // Find lead mentor record
-      const leadMentor = await LeadMentor.findOne({
-        user: user.id,
-        isActive: true,
-      }).populate("user", "name email role");
+      // For lead mentors, check their specific permissions
+      if (user.role === ROLES.LeadMentor) {
+        const leadMentor = await LeadMentor.findOne({
+          user: user.id,
+          isActive: true,
+        }).populate("user", "name email role");
 
-      if (!leadMentor) {
-        return res.status(403).json({
-          success: false,
-          message: "Lead mentor record not found or inactive",
-        });
+        if (!leadMentor) {
+          return res.status(403).json({
+            success: false,
+            message: "Lead mentor record not found or inactive",
+          });
+        }
+
+        // Check if lead mentor has any of the required permissions
+        const hasPermission = permissions.some((permission) =>
+          leadMentor.permissions.includes(PERMISSIONS[permission])
+        );
+
+        if (!hasPermission) {
+          return res.status(403).json({
+            success: false,
+            message: `Access denied. Required one of: ${permissions.join(", ")}`,
+          });
+        }
+
+        req.leadMentor = leadMentor;
+        return next();
       }
 
-      // Check if lead mentor has any of the required permissions
-      const hasPermission = permissions.some((permission) =>
-        leadMentor.permissions.includes(PERMISSIONS[permission])
-      );
-
-      if (!hasPermission) {
-        return res.status(403).json({
-          success: false,
-          message: `Access denied. Required one of: ${permissions.join(", ")}`,
-        });
-      }
-
-      req.leadMentor = leadMentor;
-      next();
+      // If user doesn't have the required role, deny access
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
     } catch (error) {
       console.error("Permission middleware error:", error);
       return res.status(500).json({

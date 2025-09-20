@@ -13,6 +13,8 @@ import questionBankRouter from "./questionBank.routes";
 import subjectRouter from "./subject.routes";
 import moduleRouter from "./module.routes";
 import resourceRouter from "./resource.routes";
+import assessmentRouter from "./assessment.routes";
+import studentAssessmentRouter from "./studentAssessment.routes";
 
 const rootRouter = Router();
 
@@ -46,6 +48,10 @@ rootRouter.use("/question-bank", questionBankRouter);
 rootRouter.use("/subjects", subjectRouter);
 rootRouter.use("/modules", moduleRouter);
 rootRouter.use("/resources", resourceRouter);
+
+// Assessment Management
+rootRouter.use("/assessments", assessmentRouter);
+rootRouter.use("/student-assessments", studentAssessmentRouter);
 
 // Test
 rootRouter.use("/test", testRouter);

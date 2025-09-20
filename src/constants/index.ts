@@ -13,6 +13,8 @@ export const PERMISSIONS = {
   ADD_STUDENTS: "add_students",
   ADD_ADMINS: "add_admins",
   ADD_MENTORS: "add_mentors",
+  CREATE_ASSESSMENTS: "create_assessments",
+  MANAGE_ASSESSMENTS: "manage_assessments",
 } as const;
 
 export const dbName = "thinkpro-lms";
