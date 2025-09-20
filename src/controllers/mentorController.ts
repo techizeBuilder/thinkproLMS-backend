@@ -28,7 +28,7 @@ export const getAllMentors = async (req: AuthRequest, res: Response) => {
 
     // Role-based filtering
     if (user.role === ROLES.LeadMentor) {
-      filter.addedBy = user.leadMentorId;
+      filter.addedBy = user.id;
     }
     // SuperAdmin can see all mentors (no additional filter)
 
@@ -40,7 +40,7 @@ export const getAllMentors = async (req: AuthRequest, res: Response) => {
     const mentors = await Mentor.find(filter)
       .populate("user", "name email isVerified createdAt")
       .populate("assignedSchools", "name city state board branchName")
-      .populate("addedBy", "user")
+      .populate("addedBy", "name email role")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -60,12 +60,12 @@ export const getAllMentors = async (req: AuthRequest, res: Response) => {
 export const getMentorById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const leadMentorId = req.user?.leadMentorId;
+    const user = req.user;
 
-    const mentor = await Mentor.findOne({ _id: id, addedBy: leadMentorId })
+    const mentor = await Mentor.findOne({ _id: id, addedBy: user.id })
       .populate("user", "name email isVerified createdAt")
       .populate("assignedSchools", "name city state board branchName")
-      .populate("addedBy", "user");
+      .populate("addedBy", "name email role");
 
     if (!mentor) {
       return res.status(404).json({
@@ -90,10 +90,22 @@ export const getMentorById = async (req: AuthRequest, res: Response) => {
 // Create a new mentor
 export const createMentor = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, salutation, address, email, phoneNumber, schoolIds } = req.body;
-    const leadMentorId = req.user?.leadMentorId;
+    const { name, salutation, address, email, phoneNumber, schoolIds } =
+      req.body;
+    const user = req.user;
+    const leadMentorId = user?.leadMentorId;
 
-    if (!leadMentorId) {
+    // Check if user has permission to create mentors
+    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor];
+    if (!allowedRoles.includes(user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
+    }
+
+    // For lead mentors, they must have leadMentorId
+    if (user.role === ROLES.LeadMentor && !leadMentorId) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Lead mentor role required.",
@@ -101,10 +113,19 @@ export const createMentor = async (req: AuthRequest, res: Response) => {
     }
 
     // Validate required fields
-    if (!name || !salutation || !address || !email || !phoneNumber || !schoolIds || schoolIds.length === 0) {
+    if (
+      !name ||
+      !salutation ||
+      !address ||
+      !email ||
+      !phoneNumber ||
+      !schoolIds ||
+      schoolIds.length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required including at least one school assignment",
+        message:
+          "All fields are required including at least one school assignment",
       });
     }
 
@@ -118,7 +139,10 @@ export const createMentor = async (req: AuthRequest, res: Response) => {
     }
 
     // Verify schools exist
-    const schools = await School.find({ _id: { $in: schoolIds }, isActive: true });
+    const schools = await School.find({
+      _id: { $in: schoolIds },
+      isActive: true,
+    });
     if (schools.length !== schoolIds.length) {
       return res.status(400).json({
         success: false,
@@ -128,22 +152,22 @@ export const createMentor = async (req: AuthRequest, res: Response) => {
 
     // Create user
     const setupToken = uuidv4();
-    const user = new User({
+    const newUser = new User({
       name,
       email,
       role: ROLES.Mentor,
       setupToken,
     });
-    await user.save();
+    await newUser.save();
 
     // Create mentor
     const mentor = new Mentor({
-      user: user._id,
+      user: newUser._id,
       salutation,
       address,
       phoneNumber,
       assignedSchools: schoolIds,
-      addedBy: leadMentorId,
+      addedBy: user.id,
     });
     await mentor.save();
 
@@ -178,10 +202,30 @@ export const updateMentor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { name, salutation, address, phoneNumber, schoolIds } = req.body;
-    const leadMentorId = req.user?.leadMentorId;
+    const user = req.user;
+    const leadMentorId = user?.leadMentorId;
 
-    // Find mentor
-    const mentor = await Mentor.findOne({ _id: id, addedBy: leadMentorId });
+    // Check if user has permission to update mentors
+    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor];
+    if (!allowedRoles.includes(user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
+    }
+
+    // Find mentor with appropriate filter based on role
+    let mentor;
+    if (user.role === ROLES.SuperAdmin) {
+      mentor = await Mentor.findOne({ _id: id, isActive: true });
+    } else {
+      mentor = await Mentor.findOne({
+        _id: id,
+        addedBy: user.id,
+        isActive: true,
+      });
+    }
+
     if (!mentor) {
       return res.status(404).json({
         success: false,
@@ -196,7 +240,10 @@ export const updateMentor = async (req: AuthRequest, res: Response) => {
 
     // Verify schools if provided
     if (schoolIds && schoolIds.length > 0) {
-      const schools = await School.find({ _id: { $in: schoolIds }, isActive: true });
+      const schools = await School.find({
+        _id: { $in: schoolIds },
+        isActive: true,
+      });
       if (schools.length !== schoolIds.length) {
         return res.status(400).json({
           success: false,
@@ -212,7 +259,9 @@ export const updateMentor = async (req: AuthRequest, res: Response) => {
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (schoolIds) updateData.assignedSchools = schoolIds;
 
-    const updatedMentor = await Mentor.findByIdAndUpdate(id, updateData, { new: true })
+    const updatedMentor = await Mentor.findByIdAndUpdate(id, updateData, {
+      new: true,
+    })
       .populate("user", "name email isVerified createdAt")
       .populate("assignedSchools", "name city state board branchName");
 
@@ -234,13 +283,33 @@ export const updateMentor = async (req: AuthRequest, res: Response) => {
 export const deleteMentor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const leadMentorId = req.user?.leadMentorId;
+    const user = req.user;
+    const leadMentorId = user?.leadMentorId;
 
-    const mentor = await Mentor.findOneAndUpdate(
-      { _id: id, addedBy: leadMentorId },
-      { isActive: false },
-      { new: true }
-    );
+    // Check if user has permission to delete mentors
+    const allowedRoles = [ROLES.SuperAdmin, ROLES.LeadMentor];
+    if (!allowedRoles.includes(user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient permissions.",
+      });
+    }
+
+    // Find and update mentor with appropriate filter based on role
+    let mentor;
+    if (user.role === ROLES.SuperAdmin) {
+      mentor = await Mentor.findOneAndUpdate(
+        { _id: id, isActive: true },
+        { isActive: false },
+        { new: true }
+      );
+    } else {
+      mentor = await Mentor.findOneAndUpdate(
+        { _id: id, addedBy: user.id, isActive: true },
+        { isActive: false },
+        { new: true }
+      );
+    }
 
     if (!mentor) {
       return res.status(404).json({

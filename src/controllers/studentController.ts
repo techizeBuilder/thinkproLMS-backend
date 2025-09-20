@@ -74,7 +74,7 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
     const students = await Student.find(filter)
       .populate("user", "name email isVerified createdAt")
       .populate("school", "name city state board branchName")
-      .populate("addedBy", "user")
+      .populate("addedBy", "name email role")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -119,7 +119,7 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
     const student = await Student.findOne(filter)
       .populate("user", "name email isVerified createdAt")
       .populate("school", "name city state board branchName")
-      .populate("addedBy", "user");
+      .populate("addedBy", "name email role");
 
     if (!student) {
       return res.status(404).json({
@@ -624,7 +624,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
     const student = await Student.findOne({ user: user.id, isActive: true })
       .populate("user", "name email isVerified createdAt")
       .populate("school", "name city state board branchName")
-      .populate("addedBy", "user");
+      .populate("addedBy", "name email role");
 
     if (!student) {
       return res.status(404).json({
@@ -743,7 +743,7 @@ export const getStudentsForPromotion = async (
       isActive: true,
       school: schoolId,
       grade: grade,
-      addedBy: user.leadMentorId,
+      addedBy: user.id,
     };
 
     const students = await Student.find(filter)
@@ -828,7 +828,7 @@ export const promoteStudents = async (req: AuthRequest, res: Response) => {
       _id: { $in: studentIds },
       school: schoolId,
       grade: currentGrade,
-      addedBy: user.leadMentorId,
+      addedBy: user.id,
       isActive: true,
     });
 

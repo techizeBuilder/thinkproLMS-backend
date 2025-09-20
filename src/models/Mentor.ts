@@ -34,8 +34,8 @@ const mentorSchema = new mongoose.Schema(
     },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "LeadMentor",
-      required: true,
+      ref: "User",
+      required: false,
     },
   },
   { timestamps: true }

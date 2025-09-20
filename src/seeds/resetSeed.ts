@@ -274,7 +274,7 @@ const run = async () => {
         phoneNumber: "+91-9876543240",
         assignedSchools: [schools[0]._id],
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
       {
         user: mentors[1]._id,
@@ -283,7 +283,7 @@ const run = async () => {
         phoneNumber: "+91-9876543241",
         assignedSchools: [schools[1]._id],
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
       {
         user: mentors[2]._id,
@@ -292,7 +292,7 @@ const run = async () => {
         phoneNumber: "+91-9876543242",
         assignedSchools: [schools[2]._id],
         isActive: true,
-        addedBy: leadMentorProfiles[1]._id,
+        addedBy: leadMentors[1]._id,
       },
       {
         user: mentors[3]._id,
@@ -301,7 +301,7 @@ const run = async () => {
         phoneNumber: "+91-9876543243",
         assignedSchools: [schools[0]._id, schools[2]._id],
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
     ]);
     console.log("✅ Mentors created:", mentorProfiles.length);
@@ -362,7 +362,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543250",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
       {
         user: students[1]._id,
@@ -373,7 +373,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543251",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
       {
         user: students[2]._id,
@@ -384,7 +384,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543252",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
       {
         user: students[3]._id,
@@ -395,7 +395,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543253",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[1]._id,
+        addedBy: leadMentors[1]._id,
       },
       {
         user: students[4]._id,
@@ -406,7 +406,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543254",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[1]._id,
+        addedBy: leadMentors[1]._id,
       },
       {
         user: students[5]._id,
@@ -417,7 +417,7 @@ const run = async () => {
         parentPhoneNumber: "+91-9876543255",
         hasCustomCredentials: true,
         isActive: true,
-        addedBy: leadMentorProfiles[0]._id,
+        addedBy: leadMentors[0]._id,
       },
     ]);
     console.log("✅ Students created:", studentProfiles.length);
