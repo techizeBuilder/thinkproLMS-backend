@@ -57,14 +57,14 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
     // Build query filter based on user role
     const filter: any = { isActive: true };
 
-    // Role-based filtering
-    if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
-      // Lead mentors and mentors can see students they personally added
-      filter.addedBy = user.id;
-    } else if (user.role === ROLES.SchoolAdmin) {
-      // School admins can see students from their school only
-      filter.school = user.schoolId;
-    }
+    // // Role-based filtering
+    // if (user.role === ROLES.LeadMentor || user.role === ROLES.Mentor) {
+    //   // Lead mentors and mentors can see students they personally added
+    //   filter.addedBy = user.id;
+    // } else if (user.role === ROLES.SchoolAdmin) {
+    //   // School admins can see students from their school only
+    //   filter.school = user.schoolId;
+    // }
     // SuperAdmin can see all students (no additional filter)
 
     // Additional filters
