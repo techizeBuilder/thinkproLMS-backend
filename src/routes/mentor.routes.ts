@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getAllMentors,
   getMentorById,
+  getMyProfile,
   createMentor,
   updateMentor,
   deleteMentor,
@@ -15,6 +16,7 @@ router.use(authMiddleware);
 
 // Mentor routes
 router.get("/", getAllMentors);
+router.get("/my-profile", getMyProfile); // Mentors can access their own profile
 router.get("/:id", getMentorById);
 router.post("/", createMentor);
 router.put("/:id", updateMentor);

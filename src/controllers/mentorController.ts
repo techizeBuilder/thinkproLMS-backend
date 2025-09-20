@@ -87,6 +87,44 @@ export const getMentorById = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Get mentor's own profile - only accessible by mentor themselves
+export const getMyProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.user;
+
+    // Only mentors can access this endpoint
+    if (user?.role !== ROLES.Mentor) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. This endpoint is only for mentors.",
+      });
+    }
+
+    const mentor = await Mentor.findOne({ user: user.id, isActive: true })
+      .populate("user", "name email isVerified createdAt")
+      .populate("assignedSchools", "name city state board branchName")
+      .populate("addedBy", "name email role");
+
+    if (!mentor) {
+      return res.status(404).json({
+        success: false,
+        message: "Mentor profile not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: mentor,
+    });
+  } catch (error) {
+    console.error("Error fetching mentor profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // Create a new mentor
 export const createMentor = async (req: AuthRequest, res: Response) => {
   try {
