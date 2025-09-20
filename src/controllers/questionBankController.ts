@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { Question, QuestionRecommendation } from "../models/QuestionBank";
+import Subject from "../models/Subject";
+import Module from "../models/Module";
 import { ROLES } from "../constants";
 import { AuthRequest } from "../middleware/auth";
 
@@ -33,6 +35,15 @@ export const getQuestions = async (req: Request, res: Response) => {
     const questions = await Question.find(filter)
       .populate("createdBy", "name email")
       .populate("approvedBy", "name email")
+      .populate("subject", "name")
+      .populate({
+        path: "module",
+        select: "grade modules",
+        populate: {
+          path: "subject",
+          select: "name"
+        }
+      })
       .sort({ order: 1, createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -66,7 +77,16 @@ export const getQuestionById = async (req: Request, res: Response) => {
 
     const question = await Question.findById(id)
       .populate("createdBy", "name email")
-      .populate("approvedBy", "name email");
+      .populate("approvedBy", "name email")
+      .populate("subject", "name")
+      .populate({
+        path: "module",
+        select: "grade modules",
+        populate: {
+          path: "subject",
+          select: "name"
+        }
+      });
 
     if (!question) {
       return res.status(404).json({
@@ -127,6 +147,23 @@ export const createQuestion = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Invalid correct answer indices",
+      });
+    }
+
+    // Validate subject and module exist
+    const subjectExists = await Subject.findById(subject);
+    if (!subjectExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject not found",
+      });
+    }
+
+    const moduleExists = await Module.findById(module);
+    if (!moduleExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Module not found",
       });
     }
 
@@ -199,6 +236,27 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Validate subject and module if they are being updated
+    if (updateData.subject) {
+      const subjectExists = await Subject.findById(updateData.subject);
+      if (!subjectExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Subject not found",
+        });
+      }
+    }
+
+    if (updateData.module) {
+      const moduleExists = await Module.findById(updateData.module);
+      if (!moduleExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Module not found",
+        });
+      }
+    }
+
     // If answer choices are being updated, validate them
     if (updateData.answerChoices) {
       if (updateData.answerChoices.length < 2 || updateData.answerChoices.length > 15) {
@@ -232,7 +290,9 @@ export const updateQuestion = async (req: AuthRequest, res: Response) => {
       updateData,
       { new: true, runValidators: true }
     ).populate("createdBy", "name email")
-     .populate("approvedBy", "name email");
+     .populate("approvedBy", "name email")
+     .populate("subject", "name")
+     .populate("module", "modules");
 
     res.json({
       success: true,
@@ -397,6 +457,23 @@ export const createQuestionRecommendation = async (req: AuthRequest, res: Respon
       });
     }
 
+    // Validate subject and module exist
+    const subjectExists = await Subject.findById(subject);
+    if (!subjectExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject not found",
+      });
+    }
+
+    const moduleExists = await Module.findById(module);
+    if (!moduleExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Module not found",
+      });
+    }
+
     const recommendation = new QuestionRecommendation({
       questionText,
       grade,
@@ -495,13 +572,18 @@ export const getSubjectsAndModules = async (req: Request, res: Response) => {
   try {
     const { grade } = req.query;
 
-    const filter: any = { isActive: true };
-    if (grade) filter.grade = grade;
+    // Get all active subjects
+    const subjects = await Subject.find({ isActive: true }).select("name");
 
-    const questions = await Question.find(filter, "subject module");
-
-    const subjects = [...new Set(questions.map(q => q.subject))].sort();
-    const modules = [...new Set(questions.map(q => q.module))].sort();
+    // Get all active modules with their subjects
+    const moduleFilter: any = { isActive: true };
+    if (grade && typeof grade === 'string') {
+      moduleFilter.grade = parseInt(grade.replace("Grade ", ""));
+    }
+    
+    const modules = await Module.find(moduleFilter)
+      .populate("subject", "name")
+      .select("grade subject modules");
 
     res.json({
       success: true,

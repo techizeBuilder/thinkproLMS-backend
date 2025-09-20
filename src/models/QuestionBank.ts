@@ -32,14 +32,14 @@ const questionSchema = new mongoose.Schema(
              "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"],
     },
     subject: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
       required: true,
-      trim: true,
     },
     module: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Module",
       required: true,
-      trim: true,
     },
     answerType: {
       type: String,
@@ -99,14 +99,14 @@ const questionRecommendationSchema = new mongoose.Schema(
              "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10"],
     },
     subject: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
       required: true,
-      trim: true,
     },
     module: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Module",
       required: true,
-      trim: true,
     },
     answerType: {
       type: String,
