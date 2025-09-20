@@ -102,6 +102,12 @@ export const parseBulkQuestions = async (req: Request, res: Response) => {
     dataRows.forEach((row, index) => {
       const rowNumber = index + 2; // +2 because we start from row 2 (after header)
       
+      // Skip empty rows - check if the row has any meaningful data
+      const hasData = row.some(cell => cell !== undefined && cell !== null && cell.toString().trim() !== '');
+      if (!hasData) {
+        return; // Skip this empty row
+      }
+      
       try {
         const questionText = row[headers.indexOf('Question Text')];
         const grade = row[headers.indexOf('Grade')];
